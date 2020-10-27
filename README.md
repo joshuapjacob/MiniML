@@ -1,2 +1,2 @@
-# CSE301-Project
-Mini-ML
+# CSE301 Project
+Joshua P. Jacob, Olavi Aikas
