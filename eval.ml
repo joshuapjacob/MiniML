@@ -12,7 +12,7 @@ type value =
     Vbool of bool
   | Vint of int
   | Vpair of value * value
-  | Vfunc of (arg list * expr * env)
+  | Vfunc of (arg list * expr * env ref)
   and env = value Env.t
 
 let rec to_string (v:value) =
@@ -88,10 +88,17 @@ let rec eval_expr (env:env) (e:expr): value =
   | Epair (first,second) -> Vpair ((eval_expr env first),(eval_expr env second))
   | Elet (is_rec, name, expr, in_expr) ->
     if is_rec then
-      eval_expr (Env.add name (eval_expr env expr) env) in_expr
+      match expr with
+      | Efun (args,body) ->
+        let new_env = ref env in
+        let func_val = Vfunc(args, body, new_env) in
+        let env_with_fn = (Env.add name func_val env) in
+        new_env := env_with_fn;
+        eval_expr env_with_fn in_expr
+      | _ -> failwith "Bad Recursion"
     else
       eval_expr (Env.add name (eval_expr env expr) env) in_expr
-  | Efun (args, body) -> Vfunc (args, body, env)
+  | Efun (args, body) -> Vfunc (args, body, ref env)
   | Eapply (app_expr, expr_list) ->
     let arg_values = (List.map (eval_expr env) expr_list) in
     let func = (eval_expr env app_expr) in
@@ -102,7 +109,7 @@ let rec eval_expr (env:env) (e:expr): value =
           Env.add
             (fst (List.nth f_args i))
             (List.nth arg_values i)
-            env
+            env.contents
         else
           Env.add
             (fst (List.nth f_args i))
