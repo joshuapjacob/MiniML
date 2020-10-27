@@ -20,3 +20,12 @@ Propose solutions to these two issues.
 
 Fix your typer and test it.*)
 
+open Ast
+
+type type_env
+
+val empty_env : unit -> type_env
+
+exception TypeError
+
+val type_expr : type_env -> expr -> typ
