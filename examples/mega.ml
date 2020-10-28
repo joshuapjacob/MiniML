@@ -1,7 +1,7 @@
 let rec f = fun (x:int) ->
   let rec g = fun (y:int) ->
     if y <= x then
-      g(f (y))
+      g (f y)
     else
       f (-y)
   in
