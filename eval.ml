@@ -9,7 +9,7 @@ module StrOrd =
 module Env = Map.Make(StrOrd)
 
 type value =
-    Vbool of bool
+  | Vbool of bool
   | Vint of int
   | Vpair of value * value
   | Vfunc of (arg list * expr * env ref)
