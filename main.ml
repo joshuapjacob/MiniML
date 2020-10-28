@@ -18,7 +18,7 @@ let main ( ) =
     else failwith "No program given" in
   Printer.p_expr stdout p;
   Printf.fprintf stdout "\n------\n";
-  let t = Type.type_expr (Type.empty_env()) p in
-  Eval.print_value stdout (Eval.eval_expr (Eval.empty_env()) p);;
+  let _ = Type.type_expr (Type.empty_env()) p in
+  Eval.print_value stdout (Eval.eval_expr (Eval.empty_env()) p)
 
 let _ = main ()

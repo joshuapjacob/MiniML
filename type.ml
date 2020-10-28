@@ -110,7 +110,7 @@ let rec type_expr env e =
     | Ename(name) -> (
         match Env.find_opt name env with
           None -> Printf.fprintf stdout "%s " name; failwith "Variable referenced before definition!"
-        | Some t -> t ) 
+        | Some t -> t )
     | Eunary(o, e1) -> type_unary o (type_expr env e1)
     | Ebinary(o, e1, e2) -> type_binary o (type_expr env e1) (type_expr env e2)
     | Eif(ie, te, ee) -> (
@@ -134,7 +134,7 @@ let rec type_expr env e =
                 let nenv = add_args nargs nenv in
                 let rec rec_typecheck exp env =
                     try (type_expr env exp, env)
-                    with 
+                    with
                       TypeError(A, Tint) ->
                         rec_typecheck exp (Env.add name (Tarrow(nargtypes, Tint)) env)
                     | TypeError(Tint, A) ->
@@ -172,12 +172,12 @@ let rec type_expr env e =
             match Env.find_opt name env with
               None -> failwith "Function called before definition"
             | Some f -> (
-                match f with 
+                match f with
                   Tarrow(argtypes, t) ->
                     let rec check_args args ats =
                         match args, ats with
                           [ ], [ ] -> t
-                        | a :: b, c :: d -> 
+                        | a :: b, c :: d ->
                             let ta = (type_expr env a) in
                             if ta = c then
                             check_args b d
