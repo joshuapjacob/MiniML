@@ -125,7 +125,8 @@ let rec type_expr env e =
             match be with
               Efun(args, body) -> (
                 let nargs = upd_a args in
-                let nenv = Env.add name (Tarrow(List.map snd nargs, A)) env in
+                let nargtypes = List.map snd nargs in
+                let nenv = Env.add name (Tarrow(nargtypes, A)) env in
                 let rec add_args (args : (name * ty) list) env =
                     match args with
                       [ ] -> env
@@ -135,12 +136,23 @@ let rec type_expr env e =
                     try (type_expr env exp, env)
                     with 
                       TypeError(A, Tint) ->
-                        rec_typecheck exp (Env.add name (Tarrow(List.map snd nargs, Tint)) env)
+                        rec_typecheck exp (Env.add name (Tarrow(nargtypes, Tint)) env)
+                    | TypeError(Tint, A) ->
+                        rec_typecheck exp (Env.add name (Tarrow(nargtypes, Tint)) env)
                     | TypeError(A, Tbool) ->
-                        rec_typecheck exp (Env.add name (Tarrow(List.map snd nargs, Tint)) env)
-                    | TypeError(_, _) ->
-                        failwith "Recursion only supported for functions
-                        of simple return types int or bool" in
+                        rec_typecheck exp (Env.add name (Tarrow(nargtypes, Tbool)) env)
+                    | TypeError(Tbool, A) ->
+                        rec_typecheck exp (Env.add name (Tarrow(nargtypes, Tbool)) env)
+                    | TypeError(A, Tprod(Tint, Tint)) ->
+                        rec_typecheck exp (Env.add name (Tarrow(nargtypes, Tprod(Tint, Tint))) env)
+                    | TypeError(A, Tprod(Tbool, Tbool)) ->
+                        rec_typecheck exp (Env.add name (Tarrow(nargtypes, Tprod(Tbool, Tbool))) env)
+                    | TypeError(Tprod(Tint, Tint), A) ->
+                        rec_typecheck exp (Env.add name (Tarrow(nargtypes, Tprod(Tint, Tint))) env)
+                    | TypeError(Tprod(Tbool, Tbool), A) ->
+                        rec_typecheck exp (Env.add name (Tarrow(nargtypes, Tprod(Tbool, Tbool))) env)
+                    | TypeError(t1, t2) ->
+                        raise (TypeError(t1, t2)) in
                 let _, fe = rec_typecheck body nenv in
                 type_expr fe ie
                 )
