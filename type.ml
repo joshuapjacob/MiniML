@@ -38,60 +38,68 @@ type type_env = ty Env.t
 
 let empty_env ( ) = Env.empty
 
-(* TypeError(name, type1, type2) means that
-variable "name" has type1 but was expected to
-have type2 *)
-exception TypeError
+(* TypeError(type1, type2) means that a
+variable had type1 but was expected to
+have type2. This is relevant for inferring the type
+of recursive functions *)
+exception TypeError of ty * ty
 
 let type_unary (o : uop) (t : ty) : ty =
     match o with
       Uineg -> (
           match t with
               Tint -> Tint
-            | _ -> raise TypeError)
+            | t1 -> raise (TypeError(t1, Tint)))
     | Ubnot -> (
         match t with
           Tbool -> Tbool
-        | _ -> raise TypeError)
+        | t1 -> raise (TypeError(t1, Tbool)))
     | Upfst -> (
         match t with
           Tprod(t1, t2) -> t1
-        | _ -> raise TypeError)
+        | t1 -> raise (TypeError(t1, Tprod(A, A))))
     | Upsnd -> (
         match t with
           Tprod(t1, t2) -> t2
-        | _ -> raise TypeError)
+        | t1 -> raise (TypeError(t1, Tprod(A, A))))
 
 let type_binary (o : bop) (t1 : ty) (t2 : ty) : ty =
     match o with
       Biadd -> (
           match t1, t2 with
             Tint, Tint -> Tint
-          | _, _ -> raise TypeError)
+          | Tint, s -> raise (TypeError(s, Tint))
+          | f, _ -> raise (TypeError(f, Tint)))
     | Bisub -> (
           match t1, t2 with
             Tint, Tint -> Tint
-          | _, _ -> raise TypeError)
+          | Tint, s -> raise (TypeError(s, Tint))
+          | f, _ -> raise (TypeError(f, Tint)))
     | Bimul -> (
           match t1, t2 with
             Tint, Tint -> Tint
-          | _, _ -> raise TypeError)
+          | Tint, s -> raise (TypeError(s, Tint))
+          | f, _ -> raise (TypeError(f, Tint)))
     | Bidiv -> (
           match t1, t2 with
             Tint, Tint -> Tint
-          | _, _ -> raise TypeError)
+          | Tint, s -> raise (TypeError(s, Tint))
+          | f, _ -> raise (TypeError(f, Tint)))
     | Bband -> (
           match t1, t2 with
             Tbool, Tbool -> Tbool
-          | _, _ -> raise TypeError)
+          | Tbool, s -> raise (TypeError(s, Tbool))
+          | f, _ -> raise (TypeError(f, Tbool)))
     | Bcleq -> (
           match t1, t2 with
             Tint, Tint -> Tbool
-          | _, _ -> raise TypeError)
+          | Tint, s -> raise (TypeError(s, Tint))
+          | f, _ -> raise (TypeError(f, Tint)))
     | Bceq -> (
           match t1, t2 with
             Tint, Tint -> Tbool
-          | _, _ -> raise TypeError)
+          | Tint, s -> raise (TypeError(s, Tint))
+          | f, _ -> raise (TypeError(f, Tint)))
 
 let rec type_expr env e =
     match e with
@@ -101,7 +109,7 @@ let rec type_expr env e =
           | Cbool b -> Tbool )
     | Ename(name) -> (
         match Env.find_opt name env with
-          None -> failwith "Variable referenced before definition!"
+          None -> Printf.fprintf stdout "%s " name; failwith "Variable referenced before definition!"
         | Some t -> t ) 
     | Eunary(o, e1) -> type_unary o (type_expr env e1)
     | Ebinary(o, e1, e2) -> type_binary o (type_expr env e1) (type_expr env e2)
@@ -109,12 +117,35 @@ let rec type_expr env e =
         match type_expr env ie with
           Tbool -> let tte = type_expr env te in
                    let tee = type_expr env ee in
-                   if tte = tee then tte else raise TypeError
-        | _ -> raise TypeError )
+                   if tte = tee then tte else raise (TypeError(tee, tte))
+        | errt -> raise (TypeError(errt, Tbool)) )
     | Epair(e1, e2) -> Tprod(type_expr env e1, type_expr env e2)
     | Elet(r, name, be, ie) ->(
         if r then (*recursive*)
-            failwith "Recursion not yet implemented"
+            match be with
+              Efun(args, body) -> (
+                let nargs = upd_a args in
+                let nenv = Env.add name (Tarrow(List.map snd nargs, A)) env in
+                let rec add_args (args : (name * ty) list) env =
+                    match args with
+                      [ ] -> env
+                    | a :: b -> add_args b (Env.add (fst a) (snd a) env) in
+                let nenv = add_args nargs nenv in
+                let rec rec_typecheck exp env =
+                    try (type_expr env exp, env)
+                    with 
+                      TypeError(A, Tint) ->
+                        rec_typecheck exp (Env.add name (Tarrow(List.map snd nargs, Tint)) env)
+                    | TypeError(A, Tbool) ->
+                        rec_typecheck exp (Env.add name (Tarrow(List.map snd nargs, Tint)) env)
+                    | TypeError(_, _) ->
+                        failwith "Recursion only supported for functions
+                        of simple return types int or bool" in
+                let _, fe = rec_typecheck body nenv in
+                type_expr fe ie
+                )
+            | _ -> failwith "Only function expressons ca
+                            be stated to be recursive"
         else type_expr (Env.add name (type_expr env be) env) ie )
     | Efun(args, e1) -> (
         let rec update_env env (args : (name * ty) list) =
@@ -131,8 +162,17 @@ let rec type_expr env e =
             | Some f -> (
                 match f with 
                   Tarrow(argtypes, t) ->
-                    if argtypes = List.map (type_expr env) argvals
-                    then t else raise TypeError
+                    let rec check_args args ats =
+                        match args, ats with
+                          [ ], [ ] -> t
+                        | a :: b, c :: d -> 
+                            let ta = (type_expr env a) in
+                            if ta = c then
+                            check_args b d
+                            else raise (TypeError(ta, c))
+                        | _, _ -> failwith "Too many, or not
+                            enough arguments in function call" in
+                    check_args argvals argtypes
                 | _ -> failwith "Only functions can be called" )
             )
         | _ -> failwith "Only functions can be called" )
