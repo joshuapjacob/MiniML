@@ -1,4 +1,4 @@
-# CSE301 (2020) Project
+# MiniML
 
 #### Joshua P. Jacob, Olavi Aikas
 
