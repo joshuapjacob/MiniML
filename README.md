@@ -63,12 +63,3 @@
 <li><p>Propose solutions to these two issues.</p></li>
 <li><p>Fix your typer and test it.</p></li>
 </ul>
-<h2 id="submission.">Submission</h2>
-<p>We give a few instructions on organization and submission.</p>
-<ul>
-<li><p>Please send your work at <code>rival@di.ens.fr</code> or <code>xavier.rival@inria.fr</code> by October, 22nd, midnight, Paris time, as a <code>zip</code> archive (include the last names of all the participants of the project in the name of the file).</p></li>
-<li><p>Provide the files listed above and clear indication on how to compile. The preferred option is to use GNU make, and to provide the updated version of the makefile. Also include examples that you added.</p></li>
-<li><p>In the case of group work, each member of the group should be able to understand each part of the code (having one member do the interpreter and the other do the typer, without any discussion defeats the purpose of the assignment and is likely to fail).</p></li>
-<li><p>We encourage the use of a version control system (such as git).</p></li>
-<li><p>Pay attention to code clarity (clear comments, proper indentation, reasonable format—breaking lines at 80 characters as Linux kernel developers do is good practice).</p></li>
-</ul>
